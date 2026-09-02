@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+import pandas as pd
 
 # Konfigurasi Halaman
 st.set_page_config(
@@ -12,12 +13,16 @@ st.title("🔬 Thermal-Stable Lock Analysis")
 st.subheader("Agriscience Formulation & Thermal Degradation Engine")
 
 # Info R&D Banner
-st.info("💡 **Info R&D:** Dilengkapi fitur unduh laporan lab otomatis untuk dokumentasi lapangan/klien.")
+st.info("💡 **Info R&D:** Dilengkapi fitur unduh laporan lab otomatis, manajemen log riwayat formula, dan kurva analisis ketahanan termal lanjutan.")
 
 st.markdown("Evaluasi tingkat ketahanan ikatan molekul pestisida dan kompleks nutrisi terhadap degradasi suhu dan panas matahari, lengkap dengan panduan takaran riil.")
 st.markdown("---")
 
-# Database Komprehensif Berdasarkan Kategori, Golongan, dan Jenis Formulasi
+# Inisialisasi Session State untuk Log Riwayat Formula
+if "riwayat_formula" not in st.session_state:
+    st.session_state.riwayat_formula = []
+
+# Database Komprehensif Diperluas (Termasuk Golongan Tambahan)
 database_formulasi = {
     # ==================== INSEKTISIDA ====================
     "Abamectin 18 g/l (EC) - Insektisida/Akarisida": {
@@ -48,6 +53,10 @@ database_formulasi = {
         "kategori": "Insektisida", "formksi": "WG (Water Dispersible Granule)", 
         "targetG": 50, "bobotJenis": 1.20, "pelarut": "Filler (Kaolin) + Dispersant", "emulsifierRatio": 0.08, "hppBahan": 600000
     },
+    "Bacillus thuringiensis 32.000 IU/mg (WP) - Insektisida Biologis": {
+        "kategori": "Insektisida Biologis", "formksi": "WP (Wettable Powder)", 
+        "targetG": 100, "bobotJenis": 1.25, "pelarut": "Carrier Organik + Protector UV", "emulsifierRatio": 0.04, "hppBahan": 320000
+    },
 
     # ==================== FUNGISIDA ====================
     "Difenokonazol 250 g/l (EC) - Triazol": {
@@ -65,6 +74,10 @@ database_formulasi = {
     "Trifloksistrobin 250 g/l (SC) - Strobilurin": {
         "kategori": "Fungisida (Strobilurin)", "formksi": "SC (Suspension Concentrate)", 
         "targetG": 250, "bobotJenis": 1.12, "pelarut": "Air + Dispersant", "emulsifierRatio": 0.07, "hppBahan": 850000
+    },
+    "Piroklostrobin 200 g/l (SC) - Strobilurin Lanjutan": {
+        "kategori": "Fungisida (Strobilurin)", "formksi": "SC (Suspension Concentrate)", 
+        "targetG": 200, "bobotJenis": 1.14, "pelarut": "Air + Anti-foaming Agent", "emulsifierRatio": 0.06, "hppBahan": 890000
     },
     "Klorotalonil 500 g/l (SC) - Kontak": {
         "kategori": "Fungisida (Kontak)", "formksi": "SC (Suspension Concentrate)", 
@@ -85,6 +98,10 @@ database_formulasi = {
     "Fosetil-Aluminium 800 g/kg (WP) - Sistemik 2 Arah": {
         "kategori": "Fungisida (Sistemik)", "formksi": "WP (Wettable Powder)", 
         "targetG": 800, "bobotJenis": 1.25, "pelarut": "Carrier Iner + Dispersant", "emulsifierRatio": 0.04, "hppBahan": 500000
+    },
+    "Kasugamisin Hidroklorida 20 g/l (SL) - Bakterisida Antibiotik": {
+        "kategori": "Bakterisida / Antibiotik", "formksi": "SL (Soluble Liquid)", 
+        "targetG": 20, "bobotJenis": 1.05, "pelarut": "Air Demineralisasi + Buffer pH", "emulsifierRatio": 0.03, "hppBahan": 600000
     },
 
     # ==================== AKARISIDA ====================
@@ -166,18 +183,29 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
     total_biaya = berat_bahan_teknis_kg * (item["hppBahan"] * (purity / 100.0))
     hpp_per_liter = total_biaya / (target_volume / 1000.0)
 
+    # Validasi Fasa Berdasarkan Ambang Deviasi
+    deviasi = abs(fasa_a - fasa_b)
+    status_text = "AKTIF (Thermal-Stable Lock Stabil)" if deviasi <= 0.05 else "TIDAK STABIL"
+
+    # Simpan ke dalam Session State Log Riwayat Formula
+    waktu_sekarang = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_data = {
+        "Waktu": waktu_sekarang,
+        "Produk": pilihan_produk.split(" - ")[0],
+        "Fasa A": fasa_a,
+        "Fasa B": fasa_b,
+        "Deviasi": round(deviasi, 3),
+        "Status": status_text,
+        "HPP (Rp)": round(hpp_per_liter)
+    }
+    st.session_state.riwayat_formula.insert(0, log_data)  # Masukkan ke urutan teratas
+
     st.markdown("---")
     st.subheader("📋 Hasil Analisis & Panduan Takaran Riil")
 
-    # Validasi Fasa Berdasarkan Ambang Deviasi
-    deviasi = abs(fasa_a - fasa_b)
-    status_text = ""
-
     if deviasi <= 0.05:
-        status_text = "AKTIF (Thermal-Stable Lock Stabil)"
         st.success(f"STATUS: {status_text} | Deviasi: {deviasi:.3f}")
     else:
-        status_text = "TIDAK STABIL"
         st.error(f"STATUS: {status_text} (Deviasi {deviasi:.3f} melewati batas 0.05). Sesuaikan kembali Fasa B!")
     
     st.markdown("### 📊 Parameter Hasil Simulasi Fasa:")
@@ -202,8 +230,6 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
     # Fitur Unduh Laporan Lab Otomatis
     st.markdown("---")
     st.subheader("📥 Unduh Laporan Lab Otomatis")
-    
-    waktu_sekarang = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     laporan_konten = f"""==================================================
         LAPORAN PENGUJIAN R&D LAB AGRISAINS
@@ -242,8 +268,23 @@ oleh Agriscience Formulation & Thermal Degradation Engine.
         use_container_width=True
     )
 
-    # Grafik Tren Simulasi Real-Time
+# Tampilkan Log Riwayat Formula Tersimpan (Session State)
+if st.session_state.riwayat_formula:
     st.markdown("---")
-    st.markdown("### 📈 Grafik Tren Riwayat Deviasi & Pengujian Real-Time")
-    chart_data = [fasa_a * 10, fasa_b * 15, (fasa_a/fasa_b) * 20, purity * 0.5]
-    st.line_chart(chart_data)
+    st.subheader("📚 Log Riwayat Pengujian & Perbandingan Formula")
+    df_riwayat = pd.DataFrame(st.session_state.riwayat_formula)
+    st.dataframe(df_riwayat, use_container_width=True)
+    
+    if st.button("🗑️ Bersihkan Log Riwayat"):
+        st.session_state.riwayat_formula = []
+        st.rerun()
+
+# Grafik Analisis Lanjutan & Kurva Ketahanan Termal
+st.markdown("---")
+st.markdown("### 📈 Kurva Analisis Lanjutan & Deviasi Termal Real-Time")
+chart_data = pd.DataFrame({
+    "Parameter": ["Fasa Utama (A)", "Fasa Aditif (B)", "Rasio Kinetik (A/B)", "Faktor Kemurnian"],
+    "Nilai Indeks": [fasa_a * 10, fasa_b * 15, (fasa_a / fasa_b) * 20, purity * 0.5]
+}).set_index("Parameter")
+
+st.bar_chart(chart_data)
