@@ -1,4 +1,5 @@
 import streamlit as st
+import datetime
 
 # Konfigurasi Halaman
 st.set_page_config(
@@ -9,6 +10,9 @@ st.set_page_config(
 
 st.title("🔬 Thermal-Stable Lock Analysis")
 st.subheader("Agriscience Formulation & Thermal Degradation Engine")
+
+# Info R&D Banner
+st.info("💡 **Info R&D:** Dilengkapi fitur unduh laporan lab otomatis untuk dokumentasi lapangan/klien.")
 
 st.markdown("Evaluasi tingkat ketahanan ikatan molekul pestisida dan kompleks nutrisi terhadap degradasi suhu dan panas matahari, lengkap dengan panduan takaran riil.")
 st.markdown("---")
@@ -167,11 +171,14 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
 
     # Validasi Fasa Berdasarkan Ambang Deviasi
     deviasi = abs(fasa_a - fasa_b)
+    status_text = ""
 
     if deviasi <= 0.05:
-        st.success(f"STATUS: AKTIF (Thermal-Stable Lock Stabil | Deviasi: {deviasi:.3f})")
+        status_text = "AKTIF (Thermal-Stable Lock Stabil)"
+        st.success(f"STATUS: {status_text} | Deviasi: {deviasi:.3f}")
     else:
-        st.error(f"STATUS: TIDAK STABIL (Deviasi {deviasi:.3f} melewati batas 0.05). Sesuaikan kembali Fasa B!")
+        status_text = "TIDAK STABIL"
+        st.error(f"STATUS: {status_text} (Deviasi {deviasi:.3f} melewati batas 0.05). Sesuaikan kembali Fasa B!")
     
     st.markdown("### 📊 Parameter Hasil Simulasi Fasa:")
     st.markdown(
@@ -191,6 +198,49 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
     st.markdown(f"1. Dengan rasio fasa aktif **{fasa_a}** dan fasa aditif **{fasa_b}**, ikatan molekul formula memiliki ketahanan optimal terhadap penguapan suhu tinggi.")
     st.markdown(f"2. Gunakan pelarut sebanyak **{berat_pelarut_kg * 1000:.2f} ml** pada tahap awal pencampuran *mixing vessel*.")
     st.markdown("3. Formula terkunci secara termal dan siap diuji ketahanannya di bawah paparan sinar UV lapangan.")
+
+    # Fitur Unduh Laporan Lab Otomatis
+    st.markdown("---")
+    st.subheader("📥 Unduh Laporan Lab Otomatis")
+    
+    waktu_sekarang = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    laporan_konten = f"""==================================================
+        LAPORAN PENGUJIAN R&D LAB AGRISAINS
+        THERMAL-STABLE LOCK ANALYSIS
+==================================================
+Tanggal & Waktu Laporan : {waktu_sekarang}
+Produk / Bahan Aktif    : {pilihan_produk}
+Kategori & Formulasi    : {item['kategori']} ({item['formksi']})
+--------------------------------------------------
+PARAMETER SIMULASI FASA:
+- Nilai Fasa Utama (A)  : {fasa_a}
+- Nilai Fasa Aditif (B) : {fasa_b}
+- Deviasi               : {deviasi:.3f}
+- Status Kestabilan     : {status_text}
+- Target Volume Total   : {target_volume} ml/g
+- Kemurnian Bahan Baku  : {purity}%
+--------------------------------------------------
+KOMPOSISI BAHAN BAKU (BATCH FORMULATION):
+- Bahan Aktif Terkoreksi: {berat_bahan_teknis_kg * 1000:.2f} Gram
+- Pelarut ({item['pelarut']}): {berat_pelarut_kg * 1000:.2f} Gram
+- Surfactant/Emulsifier : {berat_emulsifier_kg * 1000:.2f} Gram
+--------------------------------------------------
+ANALISIS FINANSIAL & HPP:
+- Estimasi Total Biaya  : Rp {total_biaya:,.0f}
+- Estimasi HPP / Satuan : Rp {round(hpp_per_liter):,.0f}
+==================================================
+Catatan R&D: Dokumen ini sah dan dihasilkan secara otomatis
+oleh Agriscience Formulation & Thermal Degradation Engine.
+=================================================="""
+
+    st.download_button(
+        label="📄 Unduh Dokumen Laporan Lab (.txt)",
+        data=laporan_konten,
+        file_name=f"Laporan_Lab_{pilihan_produk.split()[0]}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
 
     # Grafik Tren Simulasi Real-Time
     st.markdown("---")
