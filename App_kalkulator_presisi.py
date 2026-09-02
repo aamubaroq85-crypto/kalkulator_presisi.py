@@ -135,12 +135,12 @@ item = database_formulasi[pilihan_produk]
 
 st.info(f"**Kategori:** {item['kategori']} | **Bentuk Formulasi:** `{item['formksi']}`")
 
-# Input Parameter Fasa Baru
+# Input Parameter Fasa
 col1, col2, col3 = st.columns(3)
 with col1:
-    fasa_aktif = st.number_input("Nilai Fasa Bahan Utama (A)", min_value=0.1, value=1.618, step=0.001, format="%.3f")
+    fasa_a = st.number_input("Nilai Fasa Bahan Utama (A)", min_value=0.1, value=1.618, step=0.001, format="%.3f")
 with col2:
-    fasa_aditif = st.number_input("Nilai Fasa Aditif/Pelarut (B)", min_value=0.1, value=1.000, step=0.001, format="%.3f")
+    fasa_b = st.number_input("Nilai Fasa Aditif/Pelarut (B)", min_value=0.1, value=1.000, step=0.001, format="%.3f")
 with col3:
     target_volume = st.number_input("Target Volume Total (ml/g)", min_value=10.0, value=1000.0, step=50.0)
 
@@ -152,22 +152,30 @@ st.markdown("")
 if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_width=True):
     # Kalkulasi Stoikiometri yang dimodifikasi dengan Nilai Fasa A dan B
     gram_target_total = item["targetG"] * (target_volume / 1000.0)
-    gram_bahan_teknis = (gram_target_total / (purity / 100.0)) * (fasa_aktif / fasa_aditif)
+    gram_bahan_teknis = (gram_target_total / (purity / 100.0)) * (fasa_a / fasa_b)
     
     berat_total_batch_kg = (target_volume / 1000.0) * item["bobotJenis"]
     berat_bahan_teknis_kg = gram_bahan_teknis / 1000.0
-    berat_emulsifier_kg = berat_total_batch_kg * item["emulsifierRatio"] * fasa_aditif
+    berat_emulsifier_kg = berat_total_batch_kg * item["emulsifierRatio"] * fasa_b
     berat_pelarut_kg = abs(berat_total_batch_kg - (berat_bahan_teknis_kg + berat_emulsifier_kg))
     
     total_biaya = berat_bahan_teknis_kg * (item["hppBahan"] * (purity / 100.0))
     hpp_per_liter = total_biaya / (target_volume / 1000.0)
 
-    # Menampilkan Hasil Analisis Kestabilan & Perumusan
-    st.success("Simulasi Ketahanan Termal & Matriks Perumusan Berhasil Dihitung!")
+    st.markdown("---")
+    st.subheader("📋 Hasil Analisis & Panduan Takaran Riil")
+
+    # Validasi Fasa Berdasarkan Ambang Deviasi
+    deviasi = abs(fasa_a - fasa_b)
+
+    if deviasi <= 0.05:
+        st.success(f"STATUS: AKTIF (Thermal-Stable Lock Stabil | Deviasi: {deviasi:.3f})")
+    else:
+        st.error(f"STATUS: TIDAK STABIL (Deviasi {deviasi:.3f} melewati batas 0.05). Sesuaikan kembali Fasa B!")
     
     st.markdown("### 📊 Parameter Hasil Simulasi Fasa:")
     st.markdown(
-        f"* **Faktor Rasio Fasa (A/B):** `{fasa_aktif / fasa_aditif:.3f}`\n"
+        f"* **Faktor Rasio Fasa (A/B):** `{fasa_a / fasa_b:.3f}`\n"
         f"* **Komposisi Bahan Aktif Terkoreksi:** `{berat_bahan_teknis_kg * 1000:.2f} Gram`\n"
         f"* **Pelarut ({item['pelarut']}):** `{berat_pelarut_kg * 1000:.2f} Gram`\n"
         f"* **Sistem Surfactant / Emulsifier Terkunci:** `{berat_emulsifier_kg * 1000:.2f} Gram`"
@@ -180,12 +188,12 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
     )
 
     st.markdown("### 🌡️ Indeks Proteksi Termal-Stable:")
-    st.markdown(f"1. Dengan rasio fasa aktif **{fasa_aktif}** dan fasa aditif **{fasa_aditif}**, ikatan molekul formula memiliki ketahanan optimal terhadap penguapan suhu tinggi.")
+    st.markdown(f"1. Dengan rasio fasa aktif **{fasa_a}** dan fasa aditif **{fasa_b}**, ikatan molekul formula memiliki ketahanan optimal terhadap penguapan suhu tinggi.")
     st.markdown(f"2. Gunakan pelarut sebanyak **{berat_pelarut_kg * 1000:.2f} ml** pada tahap awal pencampuran *mixing vessel*.")
     st.markdown("3. Formula terkunci secara termal dan siap diuji ketahanannya di bawah paparan sinar UV lapangan.")
 
     # Grafik Tren Simulasi Real-Time
     st.markdown("---")
     st.markdown("### 📈 Grafik Tren Riwayat Deviasi & Pengujian Real-Time")
-    chart_data = [fasa_aktif * 10, fasa_aditif * 15, (fasa_aktif/fasa_aditif) * 20, purity * 0.5]
+    chart_data = [fasa_a * 10, fasa_b * 15, (fasa_a/fasa_b) * 20, purity * 0.5]
     st.line_chart(chart_data)
