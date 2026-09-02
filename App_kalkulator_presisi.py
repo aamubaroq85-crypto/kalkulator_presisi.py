@@ -13,7 +13,7 @@ st.title("🔬 Thermal-Stable Lock Analysis")
 st.subheader("Agriscience Formulation & Thermal Degradation Engine")
 
 # Info R&D Banner
-st.info("💡 **Info R&D:** Dilengkapi fitur unduh laporan lab otomatis, manajemen log riwayat formula, dan kurva analisis ketahanan termal lanjutan.")
+st.info("💡 **Info R&D:** Dilengkapi fitur urutan pencampuran presisi, unduh laporan lab otomatis, log riwayat, dan kurva ketahanan termal.")
 
 st.markdown("Evaluasi tingkat ketahanan ikatan molekul pestisida dan kompleks nutrisi terhadap degradasi suhu dan panas matahari, lengkap dengan panduan takaran riil.")
 st.markdown("---")
@@ -22,7 +22,7 @@ st.markdown("---")
 if "riwayat_formula" not in st.session_state:
     st.session_state.riwayat_formula = []
 
-# Database Komprehensif Diperluas (Termasuk Golongan Tambahan)
+# Database Komprehensif Diperluas
 database_formulasi = {
     # ==================== INSEKTISIDA ====================
     "Abamectin 18 g/l (EC) - Insektisida/Akarisida": {
@@ -198,7 +198,7 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
         "Status": status_text,
         "HPP (Rp)": round(hpp_per_liter)
     }
-    st.session_state.riwayat_formula.insert(0, log_data)  # Masukkan ke urutan teratas
+    st.session_state.riwayat_formula.insert(0, log_data)
 
     st.markdown("---")
     st.subheader("📋 Hasil Analisis & Panduan Takaran Riil")
@@ -215,6 +215,39 @@ if st.button("Jalankan Simulasi Kestabilan & Hitung Takaran", use_container_widt
         f"* **Pelarut ({item['pelarut']}):** `{berat_pelarut_kg * 1000:.2f} Gram`\n"
         f"* **Sistem Surfactant / Emulsifier Terkunci:** `{berat_emulsifier_kg * 1000:.2f} Gram`"
     )
+
+    # ==================== PANDUAN URUTAN PENCAMPURAN PRESISI ====================
+    st.markdown("### 🧪 Protokol Urutan Pencampuran Presisi (Mixing Procedure)")
+    
+    form_type = item['formksi'][:2] # Mengambil kode awal formulasi (EC, SC, WP, SL, WG, dll)
+    
+    if "EC" in form_type:
+        st.markdown(
+            f"1. **Fase Pelarut Awal:** Masukkan 60-70% total **Pelarut ({item['pelarut']})** ke dalam *mixing vessel* dengan pengadukan sedang (300-500 RPM).\n"
+            f"2. **Inkorporasi Emulsifier:** Larutkan secara perlahan **Sistem Surfactant/Emulsifier Terkunci ({berat_emulsifier_kg * 1000:.2f} Gram)** ke dalam pelarut hingga homogen.\n"
+            f"3. **Pemasukan Bahan Aktif:** Masukkan **Bahan Aktif Terkoreksi ({berat_bahan_teknis_kg * 1000:.2f} Gram)** secara bertahap (sistem *drop-by-drop* atau perlahan) untuk mencegah lonjakan panas eksotermis.\n"
+            f"4. **Koreksi Volume & Stabilisasi:** Tambahkan sisa pelarut, lalu aduk konstan selama 15-20 menit pada suhu ruang hingga ikatan *Thermal-Stable Lock* terkunci sempurna."
+        )
+    elif "SC" in form_type:
+        st.markdown(
+            f"1. **Fase Air & Agen Pembasah:** Masukkan 50% air demineralisasi dan **Sistem Surfactant ({berat_emulsifier_kg * 1000:.2f} Gram)** ke tangki pencampur.\n"
+            f"2. **Dispersi Awal:** Masukkan **Bahan Aktif Terkoreksi ({berat_bahan_teknis_kg * 1000:.2f} Gram)** secara perlahan sambil dilakukan *high-shear mixing* (pengadukan tinggi).\n"
+            f"3. **Penggilingan Basah (*Wet Milling*):** Lanjutkan proses *milling* hingga ukuran partikel mencapai target mikron.\n"
+            f"4. **Pengenceran Akhir:** Masukkan sisa pelarut air dan aditif pelindung termal secara perlahan hingga volume tercapai."
+        )
+    elif "WP" in form_type or "WG" in form_type:
+        st.markdown(
+            f"1. **Pra-Campur Serbuk Iner:** Siapkan *carrier* (talc/kaolin) di dalam *dry mixer*.\n"
+            f"2. **Pencampuran Bahan Aktif:** Masukkan **Bahan Aktif Terkoreksi ({berat_bahan_teknis_kg * 1000:.2f} Gram)** bersama **Surfactant/Dispersant ({berat_emulsifier_kg * 1000:.2f} Gram)**.\n"
+            f"3. **Homogenisasi Kering:** Aduk dengan *ribbon blender* atau *planetary mixer* selama minimal 25 menit sampai tercampur merata tanpa ada gumpalan."
+        )
+    else: # Default untuk SL / Cairan Lainnya
+        st.markdown(
+            f"1. **Fase Pelarut Dasar:** Masukkan 70% air/pelarut ke dalam bejana pencampur.\n"
+            f"2. **Pemasukan Surfaktan:** Larutkan **Sistem Surfactant ({berat_emulsifier_kg * 1000:.2f} Gram)** dan aduk rata.\n"
+            f"3. **Pemasukan Bahan Aktif:** Masukkan **Bahan Aktif Terkoreksi ({berat_bahan_teknis_kg * 1000:.2f} Gram)** secara perlahan.\n"
+            f"4. **Penyempurnaan:** Tambahkan sisa pelarut hingga volume akhir tercapai dan cek stabilitas pH larutan."
+        )
     
     st.markdown("### 💰 Analisis Finansial & HPP Skala Batch:")
     st.markdown(
@@ -268,7 +301,7 @@ oleh Agriscience Formulation & Thermal Degradation Engine.
         use_container_width=True
     )
 
-# Tampilkan Log Riwayat Formula Tersimpan (Session State)
+# Tampilkan Log Riwayat Formula Tersimpan
 if st.session_state.riwayat_formula:
     st.markdown("---")
     st.subheader("📚 Log Riwayat Pengujian & Perbandingan Formula")
